@@ -20,14 +20,27 @@ ruby_block  "set-env-java-home" do
   block do
     ENV["JAVA_HOME"] = node['java']['java_home']
   end
-  not_if { ENV["JAVA_HOME"] == node['java']['java_home'] }
+  not_if { ENV["JAVA_HOME"] == node['java']['java_home'] || node['platform_family'] == "windows" }
 end
 
 directory "/etc/profile.d" do
   mode 00755
+  not_if { node['platform_family'] == "windows" }
 end
 
 file "/etc/profile.d/jdk.sh" do
   content "export JAVA_HOME=#{node['java']['java_home']}"
   mode 00755
+  not_if { node['platform_family'] == "windows" }
+end
+
+# windows
+registry_key "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" do
+  values [{
+    :name => "JAVA_HOME",
+  	:type => :string,
+  	:data => node['java']['java_home']
+  }]
+  action :create
+  only_if { node['platform_family'] == "windows" }
 end
